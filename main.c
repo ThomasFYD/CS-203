@@ -1,83 +1,39 @@
-// Created by Yide Fang
-// Source file for the main program.
-
 #include <stdio.h>
+#include <stdlib.h>
+#include "mem.h"
+#include "cpu.h"
 
-#include "bit_manip.h"
-#include "file.h"
-#include "game.h"
+int main(int argc, char *argv[]){
+    //run unit tests if -t is passed
 
-// Provides the default global rooms array for the game
-// These are initialized here, but will be overwritten
-// by the file handling when a file is passed by the
-// command-line.
-unsigned short rooms[8] = {
-        0x0007, // room 0
-        0x011A, // room 1
-        0x1264, // room 2
-        0x2368, // room 3
-        0x4458, // room 4
-        0x85E0, // room 5
-        0x06E0, // room 6
-        0x0f81  // room 7
-};
-
-void display_commandline_format() {
-    printf("Valid command-lines are:\n");
-    printf("   ./fish_game default\n");
-    printf("   ./fish_game file input_file.txt\n");
-}
-
-int main(int argc, char *argv[]) {
-
-    if(argc < 2 || 3 < argc ) {
-        printf("An incorrect number of command-line arguments past.\n\n");
-        display_commandline_format();
+    if(argc != 2) {
+        printf("Usage error: %s <assembly_file>\n", argv[0]);
+        return 1;
     }
 
-    if(*argv[1] == 'd') {
+    const char *assemblFileName = argv[1];
 
-        // setup game and display game
-        initialize_rooms();
-        initialize_game();
-        display_map();
+    //initialize memory and CPU
+    initialize_cpu();
+    initialize_memory();
 
-        // setup game and play game
-        initialize_rooms();
-        initialize_game();
+    //load the program from the assembly file
+    load_program(assemblFileName);
 
-        while(!game_finished())
-            play_turn();
+    //implement the fetch-decode-execute cycle loop
+    if(loading_complete){
+        while(1){
+            fetch_instruction(memory);
+            execute_instruction();
 
-        puts("Game Complete.");
-
-    }
-    else if(*argv[1] == 'f') {
-
-        // Load from the command-line provided file.
-        load_file(argv[2]);
-
-        // setup game and display game
-        initialize_rooms();
-        initialize_game();
-        display_map();
-
-        // setup game and play game
-        initialize_rooms();
-        initialize_game();
-
-        while(!game_finished())
-            play_turn();
-
-        puts("Game Complete.");
-
-    }
-    else {
-
-        // Display error because the command-line arguments are incorrect.
-        puts("Unknown command-line arguments passed.");
-        display_commandline_format();
+            //halt check
+            if(IR->operation == halt){
+                break;
+            }
+        }
     }
 
+    //clean up and exit
+    //deallocate any dynamic memory if necessary
     return 0;
 }
